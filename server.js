@@ -137,12 +137,37 @@ app.put('/drinks.json', async (req, res) => {
 
 // Initialize database and start server
 initializeDatabase().then(() => {
-    app.listen(PORT, () => {
-        console.log(`שרת פאב תובל פועל ב-http://localhost:${PORT}`);
-        console.log('פתח את הדפדפן שלך ונווט לכתובת למעלה כדי להשתמש באפליקציה.');
-        console.log(`מסד נתונים SQLite: ${dbPath}`);
+    const server = app.listen(PORT, '0.0.0.0', () => {
+        console.log(`🍺 שרת פאב תובל פועל על פורט ${PORT}`);
+        console.log(`🌐 נגיש בכתובת: http://0.0.0.0:${PORT}`);
+        console.log(`📊 מסד נתונים SQLite: ${dbPath}`);
+        console.log('✅ השרת מוכן לקבלת בקשות');
     });
+    
+    // Handle server errors
+    server.on('error', (err) => {
+        if (err.code === 'EADDRINUSE') {
+            console.error(`❌ שגיאה: פורט ${PORT} כבר בשימוש`);
+            console.error('💡 נסה לעצור תהליכים אחרים או שנה את הפורט');
+        } else {
+            console.error('❌ שגיאת שרת:', err);
+        }
+        process.exit(1);
+    });
+    
+    // Graceful shutdown
+    process.on('SIGTERM', () => {
+        console.log('🛑 מקבל SIGTERM, סוגר את השרת...');
+        server.close(() => {
+            console.log('✅ השרת נסגר בהצלחה');
+            if (db) {
+                db.close();
+            }
+            process.exit(0);
+        });
+    });
+    
 }).catch((error) => {
-    console.error('Failed to initialize database:', error);
+    console.error('❌ שגיאה באתחול מסד הנתונים:', error);
     process.exit(1);
 });
