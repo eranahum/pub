@@ -50,7 +50,7 @@
    ```
 
 3. **Open your browser:**
-   Navigate to `http://localhost:2000`
+   Navigate to `http://localhost:3005`
 
 ## File Structure
 

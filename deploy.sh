@@ -36,6 +36,6 @@ pm2 save
 pm2 startup
 
 echo "✅ הפריסה הושלמה בהצלחה!"
-echo "🌐 האפליקציה זמינה בכתובת: http://YOUR_VPS_IP:2000"
+echo "🌐 האפליקציה זמינה בכתובת: http://YOUR_VPS_IP:3005"
 echo "📊 לבדיקת סטטוס: pm2 status"
 echo "📋 לוגים: pm2 logs pub-tubal"

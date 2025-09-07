@@ -115,9 +115,9 @@ npm --version
 
 ## 🌐 Access the Application
 
-- **Local:** http://localhost:2000
-- **VPS:** http://YOUR_VPS_IP:2000
-- **External:** http://YOUR_DOMAIN:2000 (if domain configured)
+- **Local:** http://localhost:3005
+- **VPS:** http://YOUR_VPS_IP:3005
+- **External:** http://YOUR_DOMAIN:3005 (if domain configured)
 
 ## 📊 Monitoring
 

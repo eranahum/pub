@@ -5,7 +5,7 @@ const cors = require('cors');
 const sqlite3 = require('sqlite3').verbose();
 
 const app = express();
-const PORT = 2000;
+const PORT = 3005;
 
 // Database setup
 const dbPath = path.join(__dirname, 'pub_database.db');

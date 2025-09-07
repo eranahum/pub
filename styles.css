@@ -155,7 +155,7 @@ main {
     background: white;
     border: 2px solid #ddd;
     border-radius: 8px;
-    max-height: 200px;
+    max-height: 350px; /* Increased to 350px */
     overflow-y: auto;
     display: none;
 }
