@@ -369,16 +369,23 @@ async function generatePayoutReport() {
             groupedOrders[order.name] += order.price_sum;
         });
         
-        let csvContent = 'שם,טלפון,סכום\n';
-        let reportHtml = '<h3>דוח תשלום</h3><table class="drinks-table"><tr><th>שם</th><th>טלפון</th><th>סכום</th></tr>';
+        let csvContent = 'שם,טלפון,סכום,תאריך הזמנה,תאריך תשלום\n';
+        let reportHtml = '<h3>דוח תשלום</h3><table class="drinks-table"><tr><th>שם</th><th>טלפון</th><th>סכום</th><th>תאריך הזמנה</th><th>תאריך תשלום</th></tr>';
+        
+        // Get current date for paid date
+        const currentDate = new Date().toLocaleDateString('he-IL');
         
         Object.entries(groupedOrders).forEach(([name, total]) => {
             // Find client phone number
             const client = clients.find(c => c.name === name);
             const phone = client ? client.phone : '';
             
-            csvContent += `${name},${phone},${total}\n`;
-            reportHtml += `<tr><td>${name}</td><td>${phone}</td><td>₪${total}</td></tr>`;
+            // Find the most recent order date for this client
+            const clientOrders = orders.filter(o => o.name === name);
+            const orderDate = clientOrders.length > 0 ? clientOrders[0].order_date : '';
+            
+            csvContent += `${name},${phone},${total},${orderDate},${currentDate}\n`;
+            reportHtml += `<tr><td>${name}</td><td>${phone}</td><td>₪${total}</td><td>${orderDate}</td><td>${currentDate}</td></tr>`;
         });
         
         reportHtml += '</table>';

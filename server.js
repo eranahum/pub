@@ -30,7 +30,9 @@ function initializeDatabase() {
                             drink TEXT NOT NULL,
                             quantity INTEGER NOT NULL,
                             price_sum REAL NOT NULL,
-                            paid BOOLEAN DEFAULT FALSE
+                            paid BOOLEAN DEFAULT FALSE,
+                            order_date TEXT NOT NULL,
+                            paid_date TEXT
                         )
                     `);
                     
@@ -41,6 +43,29 @@ function initializeDatabase() {
                             phone TEXT NOT NULL
                         )
                     `);
+                    
+                    // Add new columns to existing orders table if they don't exist
+                    db.run(`ALTER TABLE orders ADD COLUMN order_date TEXT`, (err) => {
+                        if (err && !err.message.includes('duplicate column name')) {
+                            console.error('Error adding order_date column:', err);
+                        }
+                    });
+                    
+                    db.run(`ALTER TABLE orders ADD COLUMN paid_date TEXT`, (err) => {
+                        if (err && !err.message.includes('duplicate column name')) {
+                            console.error('Error adding paid_date column:', err);
+                        }
+                    });
+                    
+                    // Update existing orders with current date
+                    const currentDate = new Date().toISOString().split('T')[0];
+                    db.run(`UPDATE orders SET order_date = ? WHERE order_date IS NULL`, [currentDate], (err) => {
+                        if (err) {
+                            console.error('Error updating existing orders with order_date:', err);
+                        } else {
+                            console.log('Updated existing orders with order_date');
+                        }
+                    });
                 });
                 
                 resolve();
@@ -102,8 +127,9 @@ app.get('/api/orders', (req, res) => {
 
 app.post('/api/orders', (req, res) => {
     const { name, drink, quantity, price_sum } = req.body;
-    db.run('INSERT INTO orders (name, drink, quantity, price_sum, paid) VALUES (?, ?, ?, ?, ?)', 
-           [name, drink, quantity, price_sum, false], function(err) {
+    const orderDate = new Date().toISOString().split('T')[0]; // Current date in YYYY-MM-DD format
+    db.run('INSERT INTO orders (name, drink, quantity, price_sum, paid, order_date) VALUES (?, ?, ?, ?, ?, ?)', 
+           [name, drink, quantity, price_sum, false, orderDate], function(err) {
         if (err) {
             console.error('Error adding order:', err);
             res.status(500).json({ error: 'Failed to add order' });
@@ -114,7 +140,8 @@ app.post('/api/orders', (req, res) => {
 });
 
 app.put('/api/orders/mark-paid', (req, res) => {
-    db.run('UPDATE orders SET paid = TRUE WHERE paid = FALSE', function(err) {
+    const paidDate = new Date().toISOString().split('T')[0]; // Current date in YYYY-MM-DD format
+    db.run('UPDATE orders SET paid = TRUE, paid_date = ? WHERE paid = FALSE', [paidDate], function(err) {
         if (err) {
             console.error('Error marking orders as paid:', err);
             res.status(500).json({ error: 'Failed to mark orders as paid' });
