@@ -276,26 +276,25 @@ main {
     padding: 12px;
     text-align: right;
     border-bottom: 1px solid #eee;
+    font-size: 14px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    line-height: 1.4;
 }
 
 .orders-table th {
     background: #8B4513;
     color: white;
     font-weight: bold;
+    font-size: 14px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    line-height: 1.4;
 }
 
-.orders-table tr:hover {
+.orders-table tr:hover:not(.status-paid):not(.status-unpaid) {
     background: #f9f9f9;
 }
 
-.status-unpaid {
-    background: #ff6b6b;
-    color: white;
-    padding: 4px 8px;
-    border-radius: 12px;
-    font-size: 0.8rem;
-    font-weight: bold;
-}
+/* Removed conflicting status-unpaid styles - now handled by table row styling */
 
 .password-form {
     max-width: 300px;
@@ -742,7 +741,11 @@ input, textarea, select {
     
     .orders-table th,
     .orders-table td {
-        padding: 8px 4px;
+        padding: 8px 4px !important;
+        font-size: 12px !important;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+        line-height: 1.4 !important;
+        text-align: right !important;
     }
 }
 
@@ -838,6 +841,39 @@ input, textarea, select {
     margin: 20px 0;
 }
 
+/* Ensure client orders table has consistent styling */
+.client-orders-display .orders-table td {
+    font-size: 14px !important;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+    line-height: 1.4 !important;
+    padding: 12px !important;
+    text-align: right !important;
+}
+
+.client-orders-display .orders-table th {
+    font-size: 14px !important;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+    line-height: 1.4 !important;
+    text-align: right !important;
+}
+
+/* Override status styling specifically for client orders display */
+.client-orders-display .orders-table tr.status-paid td {
+    font-size: 14px !important;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+    line-height: 1.4 !important;
+    padding: 12px !important;
+    text-align: right !important;
+}
+
+.client-orders-display .orders-table tr.status-unpaid td {
+    font-size: 14px !important;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+    line-height: 1.4 !important;
+    padding: 12px !important;
+    text-align: right !important;
+}
+
 .client-summary {
     background: #e9ecef;
     padding: 15px;
@@ -855,10 +891,37 @@ input, textarea, select {
     color: #6c757d;
 }
 
-.status-paid {
-    background-color: #d4edda;
+/* Removed conflicting status styles - all styling now handled by table-specific rules */
+
+/* Ensure all table cells have consistent styling */
+.orders-table td {
+    font-size: 14px !important;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+    line-height: 1.4 !important;
+    padding: 12px !important;
+    text-align: right !important;
 }
 
-.status-unpaid {
-    background-color: #f8d7da;
+/* Status-specific background colors only */
+.orders-table tr.status-paid td {
+    background-color: #d4edda !important;
+    color: #155724 !important;
+    border-color: #c3e6cb;
+}
+
+.orders-table tr.status-unpaid td {
+    background-color: #f8d7da !important;
+    color: #721c24 !important;
+    border-color: #f5c6cb;
+}
+
+/* Make sure the styling is consistent */
+.orders-table tbody tr.status-paid:hover {
+    background-color: #c3e6cb !important;
+    opacity: 0.9;
+}
+
+.orders-table tbody tr.status-unpaid:hover {
+    background-color: #f5c6cb !important;
+    opacity: 0.9;
 }

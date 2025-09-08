@@ -392,11 +392,14 @@ async function loadPayoutPage() {
 
 async function loadUnpaidOrders() {
     try {
+        console.log('Loading unpaid orders...');
         const orders = await apiRequest('/api/orders?paid=false');
+        console.log('Unpaid orders found:', orders.length);
         
         const unpaidOrdersDisplay = document.getElementById('unpaid-orders-display');
         
         if (orders.length === 0) {
+            console.log('No unpaid orders, showing empty message');
             unpaidOrdersDisplay.innerHTML = '<p style="text-align: center; color: #666; margin: 20px 0;">אין הזמנות לא משולמות</p>';
             return;
         }
@@ -550,7 +553,8 @@ async function generatePayoutReport() {
         reportHtml += '</table>';
         
         // Mark orders as paid
-        await apiRequest('/api/orders/mark-paid', { method: 'PUT' });
+        const markPaidResponse = await apiRequest('/api/orders/mark-paid', { method: 'PUT' });
+        console.log('Mark paid response:', markPaidResponse);
         
         // Display report
         const reportDisplay = document.getElementById('report-display');
@@ -559,6 +563,12 @@ async function generatePayoutReport() {
         
         // Download CSV
         downloadCSV(csvContent, 'doh-tashlum.csv');
+        
+        // Wait a moment for database update to complete, then refresh unpaid orders display
+        setTimeout(async () => {
+            console.log('Refreshing unpaid orders after payment...');
+            await loadUnpaidOrders();
+        }, 500);
         
         showMessage('דוח תשלום נוצר וההזמנות סומנו כמשולמות.', 'success');
     } catch (error) {
