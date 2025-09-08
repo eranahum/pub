@@ -2,6 +2,39 @@
 let clients = [];
 let drinks = [];
 
+// Cross-browser way to open a <select>
+function openSelectDropdown(selectEl) {
+    if (!selectEl) return;
+
+    // Best: supported in modern Chromium
+    if (typeof selectEl.showPicker === 'function') {
+        try { selectEl.showPicker(); return; } catch (_) {}
+    }
+
+    // Fallback: temporarily show as a listbox
+    const prevSize = selectEl.size || 0;
+    selectEl.dataset.prevSize = String(prevSize);
+    selectEl.size = Math.min(6, selectEl.options.length); // show a few options
+    selectEl.classList.add('force-open');
+    selectEl.focus();
+
+    const close = () => {
+        selectEl.size = Number(selectEl.dataset.prevSize || 0);
+        selectEl.classList.remove('force-open');
+        document.removeEventListener('click', onDocClick, true);
+        selectEl.removeEventListener('blur', close);
+        selectEl.removeEventListener('change', close);
+        selectEl.removeEventListener('keydown', onKeyDown);
+    };
+    const onDocClick = (e) => { if (e.target !== selectEl) close(); };
+    const onKeyDown = (e) => { if (e.key === 'Escape') close(); };
+
+    document.addEventListener('click', onDocClick, true);
+    selectEl.addEventListener('blur', close);
+    selectEl.addEventListener('change', close);
+    selectEl.addEventListener('keydown', onKeyDown);
+}
+
 // Initialize the application
 document.addEventListener('DOMContentLoaded', async function() {
     await loadData();
@@ -240,6 +273,17 @@ function selectClient(clientName) {
         option.dataset.price = drink.price;
         drinkDropdown.appendChild(option);
     });
+    
+    // Open the drinks dropdown
+    openSelectDropdown(drinkDropdown);
+    
+    // Optional subtle highlight
+    drinkDropdown.style.borderColor = '#8B4513';
+    drinkDropdown.style.boxShadow = '0 0 5px rgba(139, 69, 19, 0.3)';
+    setTimeout(() => {
+        drinkDropdown.style.borderColor = '';
+        drinkDropdown.style.boxShadow = '';
+    }, 1000);
 }
 
 // Show client dropdown when user clicks on search input
