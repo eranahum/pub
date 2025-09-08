@@ -348,6 +348,7 @@ async function loadPayoutPage() {
             <div class="payout-buttons">
                 <button class="generate-report-btn" onclick="generatePayoutReport()">צור דוח תשלום</button>
                 <button class="delete-order-btn" onclick="showDeleteOrderForm()">מחק הזמנה</button>
+                <button class="client-report-btn" onclick="showClientReportForm()">דוח לקוח</button>
             </div>
             <div class="delete-order-form" id="delete-order-form" style="display: none;">
                 <div class="form-group">
@@ -366,7 +367,21 @@ async function loadPayoutPage() {
                     </div>
                 </div>
             </div>
+            <div class="client-report-form" id="client-report-form" style="display: none;">
+                <div class="form-group">
+                    <label for="client-search-input">חיפוש לקוח:</label>
+                    <input type="text" id="client-search-input" placeholder="הזן שם לקוח" oninput="filterClientsForReport()" onclick="showAllClientsForReport()">
+                    <div class="dropdown" id="client-dropdown-report" style="display: none;">
+                        <!-- Client options will be populated here -->
+                    </div>
+                </div>
+                <div class="form-buttons">
+                    <button class="generate-client-report-btn" onclick="generateClientReport()">צור דוח לקוח</button>
+                    <button class="cancel-client-report-btn" onclick="hideClientReportForm()">ביטול</button>
+                </div>
+            </div>
             <div class="unpaid-orders-display" id="unpaid-orders-display"></div>
+            <div class="client-orders-display" id="client-orders-display"></div>
             <div class="report-display" id="report-display"></div>
         </div>
     `;
@@ -858,5 +873,178 @@ function showMessage(message, type, persistent = false) {
                 messageDiv.remove();
             }
         }, 5000);
+    }
+}
+
+// Client report functionality
+function showClientReportForm() {
+    const form = document.getElementById('client-report-form');
+    form.style.display = 'block';
+    
+    // Load clients for the dropdown and show them immediately
+    loadClientsForReport().then(() => {
+        showAllClientsForReport();
+    });
+}
+
+function hideClientReportForm() {
+    const form = document.getElementById('client-report-form');
+    form.style.display = 'none';
+    
+    // Clear the search input and dropdown
+    document.getElementById('client-search-input').value = '';
+    document.getElementById('client-dropdown-report').style.display = 'none';
+    document.getElementById('client-orders-display').innerHTML = '';
+}
+
+async function loadClientsForReport() {
+    try {
+        const clientsData = await apiRequest('/api/clients');
+        window.clientsForReport = clientsData;
+        return clientsData;
+    } catch (error) {
+        console.error('Error loading clients for report:', error);
+        showMessage('שגיאה בטעינת רשימת הלקוחות.', 'error');
+        return [];
+    }
+}
+
+function showAllClientsForReport() {
+    const dropdown = document.getElementById('client-dropdown-report');
+    
+    if (!window.clientsForReport || window.clientsForReport.length === 0) {
+        dropdown.style.display = 'none';
+        return;
+    }
+    
+    dropdown.innerHTML = window.clientsForReport.map(client => 
+        `<div class="dropdown-item" onclick="selectClientForReport('${client.name}')">${client.name}</div>`
+    ).join('');
+    
+    dropdown.style.display = 'block';
+}
+
+function filterClientsForReport() {
+    const searchTerm = document.getElementById('client-search-input').value.toLowerCase();
+    const dropdown = document.getElementById('client-dropdown-report');
+    
+    if (!window.clientsForReport) {
+        dropdown.style.display = 'none';
+        return;
+    }
+    
+    if (searchTerm.length < 1) {
+        // Show all clients when search is empty
+        showAllClientsForReport();
+        return;
+    }
+    
+    const filteredClients = window.clientsForReport.filter(client => 
+        client.name.toLowerCase().includes(searchTerm)
+    );
+    
+    if (filteredClients.length === 0) {
+        dropdown.style.display = 'none';
+        return;
+    }
+    
+    dropdown.innerHTML = filteredClients.map(client => 
+        `<div class="dropdown-item" onclick="selectClientForReport('${client.name}')">${client.name}</div>`
+    ).join('');
+    
+    dropdown.style.display = 'block';
+}
+
+function selectClientForReport(clientName) {
+    document.getElementById('client-search-input').value = clientName;
+    document.getElementById('client-dropdown-report').style.display = 'none';
+}
+
+async function generateClientReport() {
+    const clientName = document.getElementById('client-search-input').value.trim();
+    
+    if (!clientName) {
+        showMessage('אנא בחר לקוח.', 'error');
+        return;
+    }
+    
+    try {
+        const orders = await apiRequest('/api/orders');
+        const clientOrders = orders.filter(order => order.name === clientName);
+        
+        if (clientOrders.length === 0) {
+            showMessage(`לא נמצאו הזמנות עבור ${clientName}.`, 'success');
+            document.getElementById('client-orders-display').innerHTML = '';
+            return;
+        }
+        
+        // Sort orders by date (newest first)
+        clientOrders.sort((a, b) => new Date(b.order_date) - new Date(a.order_date));
+        
+        let reportHtml = `
+            <h3>דוח הזמנות עבור ${clientName}</h3>
+            <div class="orders-table-container">
+                <table class="orders-table">
+                    <thead>
+                        <tr>
+                            <th>מזהה</th>
+                            <th>שם</th>
+                            <th>משקה</th>
+                            <th>כמות</th>
+                            <th>מחיר</th>
+                            <th>סטטוס</th>
+                            <th>תאריך הזמנה</th>
+                            <th>תאריך תשלום</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+        
+        let totalAmount = 0;
+        let paidAmount = 0;
+        
+        clientOrders.forEach(order => {
+            const paidStatus = order.paid ? 'שולם' : 'לא שולם';
+            const paidDate = order.paid_date || '-';
+            const orderDate = order.order_date || '-';
+            
+            totalAmount += order.price_sum;
+            if (order.paid) {
+                paidAmount += order.price_sum;
+            }
+            
+            reportHtml += `
+                <tr class="${order.paid ? 'status-paid' : 'status-unpaid'}">
+                    <td>${order.id}</td>
+                    <td>${order.name}</td>
+                    <td>${order.drink}</td>
+                    <td>${order.quantity}</td>
+                    <td>₪${order.price_sum}</td>
+                    <td>${paidStatus}</td>
+                    <td>${orderDate}</td>
+                    <td>${paidDate}</td>
+                </tr>
+            `;
+        });
+        
+        reportHtml += `
+                    </tbody>
+                </table>
+            </div>
+            <div class="client-summary">
+                <h4>סיכום:</h4>
+                <p><strong>סה"כ הזמנות:</strong> ${clientOrders.length}</p>
+                <p><strong>סכום כולל:</strong> ₪${totalAmount}</p>
+                <p><strong>סכום שולם:</strong> ₪${paidAmount}</p>
+                <p><strong>סכום חוב:</strong> ₪${totalAmount - paidAmount}</p>
+            </div>
+        `;
+        
+        document.getElementById('client-orders-display').innerHTML = reportHtml;
+        showMessage(`דוח לקוח נוצר בהצלחה עבור ${clientName}.`, 'success');
+        
+    } catch (error) {
+        console.error('Error generating client report:', error);
+        showMessage('שגיאה ביצירת דוח הלקוח.', 'error');
     }
 }
