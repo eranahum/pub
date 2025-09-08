@@ -248,6 +248,55 @@ main {
     text-align: center;
 }
 
+.payout-buttons {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    margin: 20px 0;
+    flex-wrap: wrap;
+}
+
+/* Orders table styles */
+.orders-table-container {
+    margin: 20px 0;
+    overflow-x: auto;
+}
+
+.orders-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.orders-table th,
+.orders-table td {
+    padding: 12px;
+    text-align: right;
+    border-bottom: 1px solid #eee;
+}
+
+.orders-table th {
+    background: #8B4513;
+    color: white;
+    font-weight: bold;
+}
+
+.orders-table tr:hover {
+    background: #f9f9f9;
+}
+
+.status-unpaid {
+    background: #ff6b6b;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: bold;
+}
+
 .password-form {
     max-width: 300px;
     margin: 20px auto;
@@ -286,14 +335,149 @@ main {
     font-size: 1.2rem;
     border-radius: 25px;
     cursor: pointer;
-    margin: 20px 0;
     transition: all 0.3s ease;
+    min-width: 200px; /* Make buttons same width */
 }
 
 .generate-report-btn:hover {
     background: #FF4500;
     transform: translateY(-2px);
     box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.delete-order-btn {
+    background: #dc3545;
+    color: white;
+    border: none;
+    padding: 15px 30px;
+    font-size: 1.2rem;
+    border-radius: 25px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-width: 200px; /* Make buttons same width */
+}
+
+.delete-order-btn:hover {
+    background: #c82333;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+/* Delete order form styles */
+.delete-order-form {
+    background: #f8f9fa;
+    border: 2px solid #dc3545;
+    border-radius: 10px;
+    padding: 20px;
+    margin: 20px auto;
+    max-width: 400px;
+    text-align: center;
+}
+
+.delete-order-form .form-group {
+    margin-bottom: 15px;
+}
+
+.delete-order-form label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: bold;
+    color: #333;
+}
+
+.delete-order-form input {
+    width: 100%;
+    padding: 10px;
+    border: 2px solid #ddd;
+    border-radius: 5px;
+    font-size: 1rem;
+    text-align: center;
+}
+
+.delete-order-form input:focus {
+    border-color: #dc3545;
+    outline: none;
+}
+
+.form-buttons {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+
+.confirm-delete-btn {
+    background: #dc3545;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+}
+
+.confirm-delete-btn:hover {
+    background: #c82333;
+}
+
+.cancel-delete-btn {
+    background: #6c757d;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+}
+
+.cancel-delete-btn:hover {
+    background: #5a6268;
+}
+
+/* Delete confirmation styles */
+.delete-confirmation {
+    margin-top: 15px;
+    padding: 15px;
+    background: #fff3cd;
+    border: 2px solid #ffc107;
+    border-radius: 8px;
+}
+
+.delete-confirmation p {
+    margin-bottom: 15px;
+    font-weight: bold;
+    color: #856404;
+}
+
+.final-delete-btn {
+    background: #dc3545;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+}
+
+.final-delete-btn:hover {
+    background: #c82333;
+}
+
+.cancel-final-btn {
+    background: #28a745;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+}
+
+.cancel-final-btn:hover {
+    background: #218838;
 }
 
 .report-display {
@@ -550,6 +734,15 @@ input, textarea, select {
     
     .drink-form input {
         width: 100%;
+    }
+    
+    .orders-table {
+        font-size: 0.8rem;
+    }
+    
+    .orders-table th,
+    .orders-table td {
+        padding: 8px 4px;
     }
 }
 

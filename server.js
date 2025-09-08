@@ -79,6 +79,11 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static('.'));
 
+// Test endpoint
+app.get('/api/test', (req, res) => {
+    res.json({ message: 'Server is working!', timestamp: new Date().toISOString() });
+});
+
 // API Routes for database operations
 app.get('/api/clients', (req, res) => {
     db.all('SELECT name, phone FROM clients ORDER BY name', (err, rows) => {
@@ -147,6 +152,36 @@ app.put('/api/orders/mark-paid', (req, res) => {
             res.status(500).json({ error: 'Failed to mark orders as paid' });
         } else {
             res.json({ success: true, changes: this.changes });
+        }
+    });
+});
+
+app.delete('/api/orders/:id', (req, res) => {
+    const orderId = req.params.id;
+    console.log(`🔥 DELETE REQUEST RECEIVED for order ID: ${orderId}`);
+    console.log(`🔥 Request params:`, req.params);
+    console.log(`🔥 Request body:`, req.body);
+    
+    // First check if the order exists
+    db.get('SELECT * FROM orders WHERE id = ?', [orderId], (err, row) => {
+        if (err) {
+            console.error('❌ Error checking order existence:', err);
+            res.status(500).json({ error: 'Failed to check order' });
+        } else if (!row) {
+            console.log(`❌ Order ID ${orderId} not found in database`);
+            res.status(404).json({ error: 'Order not found' });
+        } else {
+            console.log(`✅ Order found:`, row);
+            // Order exists, proceed with deletion
+            db.run('DELETE FROM orders WHERE id = ?', [orderId], function(err) {
+                if (err) {
+                    console.error('❌ Error deleting order:', err);
+                    res.status(500).json({ error: 'Failed to delete order' });
+                } else {
+                    console.log(`✅ Successfully deleted order ID: ${orderId}`);
+                    res.json({ success: true, changes: this.changes });
+                }
+            });
         }
     });
 });

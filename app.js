@@ -340,15 +340,159 @@ function verifyPayoutPassword() {
 }
 
 // Payout page functionality
-function loadPayoutPage() {
+async function loadPayoutPage() {
     const mainContent = document.getElementById('main-content');
     mainContent.innerHTML = `
         <div class="payout-section">
             <h2>דוח תשלום</h2>
-            <button class="generate-report-btn" onclick="generatePayoutReport()">צור דוח תשלום</button>
+            <div class="payout-buttons">
+                <button class="generate-report-btn" onclick="generatePayoutReport()">צור דוח תשלום</button>
+                <button class="delete-order-btn" onclick="showDeleteOrderForm()">מחק הזמנה</button>
+            </div>
+            <div class="delete-order-form" id="delete-order-form" style="display: none;">
+                <div class="form-group">
+                    <label for="order-id-input">מזהה הזמנה:</label>
+                    <input type="number" id="order-id-input" placeholder="הזן מזהה הזמנה">
+                </div>
+                <div class="form-buttons">
+                    <button class="confirm-delete-btn" onclick="showDeleteConfirmation()">מחק</button>
+                    <button class="cancel-delete-btn" onclick="hideDeleteOrderForm()">ביטול</button>
+                </div>
+                <div class="delete-confirmation" id="delete-confirmation" style="display: none;">
+                    <p>האם אתה בטוח שברצונך למחוק הזמנה מספר <span id="order-id-display"></span>?</p>
+                    <div class="form-buttons">
+                        <button class="final-delete-btn" onclick="finalDeleteOrder()">כן, מחק</button>
+                        <button class="cancel-final-btn" onclick="hideDeleteConfirmation()">לא, ביטול</button>
+                    </div>
+                </div>
+            </div>
+            <div class="unpaid-orders-display" id="unpaid-orders-display"></div>
             <div class="report-display" id="report-display"></div>
         </div>
     `;
+    
+    // Load and display unpaid orders
+    await loadUnpaidOrders();
+}
+
+async function loadUnpaidOrders() {
+    try {
+        const orders = await apiRequest('/api/orders?paid=false');
+        
+        const unpaidOrdersDisplay = document.getElementById('unpaid-orders-display');
+        
+        if (orders.length === 0) {
+            unpaidOrdersDisplay.innerHTML = '<p style="text-align: center; color: #666; margin: 20px 0;">אין הזמנות לא משולמות</p>';
+            return;
+        }
+        
+        let ordersHtml = `
+            <h3>הזמנות לא משולמות (${orders.length})</h3>
+            <div class="orders-table-container">
+                <table class="orders-table">
+                    <thead>
+                        <tr>
+                            <th>מזהה</th>
+                            <th>שם לקוח</th>
+                            <th>משקה</th>
+                            <th>כמות</th>
+                            <th>מחיר</th>
+                            <th>תאריך הזמנה</th>
+                            <th>סטטוס</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+        
+        orders.forEach(order => {
+            const orderDate = order.order_date ? new Date(order.order_date).toLocaleDateString('he-IL') : 'לא זמין';
+            ordersHtml += `
+                <tr>
+                    <td>${order.id}</td>
+                    <td>${order.name}</td>
+                    <td>${order.drink}</td>
+                    <td>${order.quantity}</td>
+                    <td>₪${order.price_sum}</td>
+                    <td>${orderDate}</td>
+                    <td><span class="status-unpaid">לא שולם</span></td>
+                </tr>
+            `;
+        });
+        
+        ordersHtml += `
+                    </tbody>
+                </table>
+            </div>
+        `;
+        
+        unpaidOrdersDisplay.innerHTML = ordersHtml;
+        
+    } catch (error) {
+        console.error('Error loading unpaid orders:', error);
+        showMessage('שגיאה בטעינת ההזמנות הלא משולמות.', 'error');
+    }
+}
+
+function showDeleteOrderForm() {
+    const deleteForm = document.getElementById('delete-order-form');
+    deleteForm.style.display = 'block';
+    document.getElementById('order-id-input').focus();
+}
+
+function hideDeleteOrderForm() {
+    const deleteForm = document.getElementById('delete-order-form');
+    deleteForm.style.display = 'none';
+    document.getElementById('order-id-input').value = '';
+    hideDeleteConfirmation();
+}
+
+function showDeleteConfirmation() {
+    const orderId = document.getElementById('order-id-input').value.trim();
+    
+    if (!orderId) {
+        showMessage('אנא הזן מזהה הזמנה תקין.', 'error');
+        return;
+    }
+    
+    // Show confirmation dialog
+    document.getElementById('order-id-display').textContent = orderId;
+    document.getElementById('delete-confirmation').style.display = 'block';
+}
+
+function hideDeleteConfirmation() {
+    document.getElementById('delete-confirmation').style.display = 'none';
+}
+
+function finalDeleteOrder() {
+    const orderId = document.getElementById('order-id-input').value.trim();
+    deleteOrder(orderId);
+    hideDeleteOrderForm();
+}
+
+async function deleteOrder(orderId) {
+    try {
+        console.log(`Client: Attempting to delete order ID: ${orderId}`);
+        const response = await apiRequest(`/api/orders/${orderId}`, {
+            method: 'DELETE'
+        });
+        
+        console.log('Client: Delete response:', response);
+        
+        if (response.success) {
+            showMessage(`הזמנה מספר ${orderId} נמחקה בהצלחה.`, 'success');
+            // Reload the unpaid orders to update the display
+            await loadUnpaidOrders();
+        } else {
+            showMessage('שגיאה במחיקת ההזמנה.', 'error');
+        }
+    } catch (error) {
+        console.error('Client: Error deleting order:', error);
+        if (error.message.includes('404')) {
+            showMessage(`הזמנה מספר ${orderId} לא נמצאה.`, 'error');
+        } else {
+            showMessage('שגיאה במחיקת ההזמנה. אנא נסה שוב.', 'error');
+        }
+    }
 }
 
 async function generatePayoutReport() {
