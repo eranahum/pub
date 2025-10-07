@@ -3,6 +3,8 @@ const fs = require('fs').promises;
 const path = require('path');
 const cors = require('cors');
 const sqlite3 = require('sqlite3').verbose();
+const session = require('express-session');
+const cookieParser = require('cookie-parser');
 
 const app = express();
 const PORT = 3005;
@@ -44,6 +46,14 @@ function initializeDatabase() {
                         )
                     `);
                     
+                    db.run(`
+                        CREATE TABLE IF NOT EXISTS users (
+                            user_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            User_name TEXT NOT NULL UNIQUE,
+                            Password TEXT NOT NULL
+                        )
+                    `);
+                    
                     // Add new columns to existing orders table if they don't exist
                     db.run(`ALTER TABLE orders ADD COLUMN order_date TEXT`, (err) => {
                         if (err && !err.message.includes('duplicate column name')) {
@@ -75,17 +85,123 @@ function initializeDatabase() {
 }
 
 // Middleware
-app.use(cors());
+app.use(cors({
+    origin: true,
+    credentials: true
+}));
 app.use(express.json());
-app.use(express.static('.'));
+app.use(cookieParser());
+app.use(session({
+    secret: 'pub-tuvalu-secret-key-2025',
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+        maxAge: 5 * 60 * 60 * 1000, // 5 hours in milliseconds
+        httpOnly: true,
+        secure: false // Set to true if using HTTPS
+    }
+}));
+
+// Authentication middleware
+function requireAuth(req, res, next) {
+    if (req.session && req.session.userId) {
+        // Session is valid
+        next();
+    } else {
+        // No valid session
+        res.status(401).json({ error: 'Unauthorized', redirect: '/login.html' });
+    }
+}
+
+// Serve static files with authentication check for HTML pages (except login.html)
+app.use((req, res, next) => {
+    const filePath = req.path;
+    
+    // Allow access to login page and its assets
+    if (filePath === '/login.html' || filePath.startsWith('/styles.css') || filePath === '/favicon.ico') {
+        return express.static('.')(req, res, next);
+    }
+    
+    // Check authentication for HTML pages
+    if (filePath.endsWith('.html') || filePath === '/' || filePath === '/index.html') {
+        if (req.session && req.session.userId) {
+            return express.static('.')(req, res, next);
+        } else {
+            return res.redirect('/login.html');
+        }
+    }
+    
+    // Allow other static files (JS, CSS, images, etc.)
+    express.static('.')(req, res, next);
+});
+
+// Authentication Routes
+app.post('/api/login', (req, res) => {
+    const { username, password } = req.body;
+    
+    if (!username || !password) {
+        return res.status(400).json({ error: 'Username and password are required' });
+    }
+    
+    // Query database for user
+    db.get('SELECT user_id, User_name FROM users WHERE User_name = ? AND Password = ?', 
+           [username, password], (err, user) => {
+        if (err) {
+            console.error('Error checking credentials:', err);
+            return res.status(500).json({ error: 'Server error' });
+        }
+        
+        if (user) {
+            // Create session
+            req.session.userId = user.user_id;
+            req.session.username = user.User_name;
+            
+            console.log(`✅ User ${user.User_name} logged in successfully`);
+            res.json({ 
+                success: true, 
+                message: 'Login successful',
+                user: { id: user.user_id, username: user.User_name }
+            });
+        } else {
+            res.status(401).json({ error: 'Invalid username or password' });
+        }
+    });
+});
+
+app.post('/api/logout', (req, res) => {
+    const username = req.session?.username;
+    req.session.destroy((err) => {
+        if (err) {
+            console.error('Error destroying session:', err);
+            return res.status(500).json({ error: 'Logout failed' });
+        }
+        res.clearCookie('connect.sid');
+        console.log(`✅ User ${username} logged out successfully`);
+        res.json({ success: true, message: 'Logged out successfully' });
+    });
+});
+
+app.get('/api/check-session', (req, res) => {
+    if (req.session && req.session.userId) {
+        res.json({ 
+            authenticated: true,
+            user: {
+                id: req.session.userId,
+                username: req.session.username
+            }
+        });
+    } else {
+        res.status(401).json({ authenticated: false });
+    }
+});
 
 // Test endpoint
 app.get('/api/test', (req, res) => {
     res.json({ message: 'Server is working!', timestamp: new Date().toISOString() });
 });
 
-// API Routes for database operations
-app.get('/api/clients', (req, res) => {
+// API Routes for database operations (protected by authentication)
+app.get('/api/clients', requireAuth, (req, res) => {
     db.all('SELECT name, phone FROM clients ORDER BY name', (err, rows) => {
         if (err) {
             console.error('Error fetching clients:', err);
@@ -96,7 +212,7 @@ app.get('/api/clients', (req, res) => {
     });
 });
 
-app.post('/api/clients', (req, res) => {
+app.post('/api/clients', requireAuth, (req, res) => {
     const { name, phone } = req.body;
     db.run('INSERT INTO clients (name, phone) VALUES (?, ?)', [name, phone], function(err) {
         if (err) {
@@ -108,7 +224,7 @@ app.post('/api/clients', (req, res) => {
     });
 });
 
-app.get('/api/orders', (req, res) => {
+app.get('/api/orders', requireAuth, (req, res) => {
     const { paid } = req.query;
     let query = 'SELECT * FROM orders';
     let params = [];
@@ -130,7 +246,7 @@ app.get('/api/orders', (req, res) => {
     });
 });
 
-app.post('/api/orders', (req, res) => {
+app.post('/api/orders', requireAuth, (req, res) => {
     const { name, drink, quantity, price_sum } = req.body;
     const orderDate = new Date().toISOString().split('T')[0]; // Current date in YYYY-MM-DD format
     db.run('INSERT INTO orders (name, drink, quantity, price_sum, paid, order_date) VALUES (?, ?, ?, ?, ?, ?)', 
@@ -144,7 +260,7 @@ app.post('/api/orders', (req, res) => {
     });
 });
 
-app.put('/api/orders/mark-paid', (req, res) => {
+app.put('/api/orders/mark-paid', requireAuth, (req, res) => {
     const paidDate = new Date().toISOString().split('T')[0]; // Current date in YYYY-MM-DD format
     db.run('UPDATE orders SET paid = TRUE, paid_date = ? WHERE paid = FALSE', [paidDate], function(err) {
         if (err) {
@@ -156,7 +272,7 @@ app.put('/api/orders/mark-paid', (req, res) => {
     });
 });
 
-app.delete('/api/orders/:id', (req, res) => {
+app.delete('/api/orders/:id', requireAuth, (req, res) => {
     const orderId = req.params.id;
     console.log(`🔥 DELETE REQUEST RECEIVED for order ID: ${orderId}`);
     console.log(`🔥 Request params:`, req.params);
@@ -187,7 +303,7 @@ app.delete('/api/orders/:id', (req, res) => {
 });
 
 // Routes for JSON file updates (for drinks)
-app.put('/drinks.json', async (req, res) => {
+app.put('/drinks.json', requireAuth, async (req, res) => {
     try {
         await fs.writeFile('drinks.json', JSON.stringify(req.body, null, 2));
         res.json({ success: true });

@@ -48,6 +48,37 @@ function showClients() {
     });
 }
 
+// Function to display users
+function showUsers() {
+    return new Promise((resolve, reject) => {
+        console.log('👤 USERS:');
+        console.log('='.repeat(50));
+        
+        db.all('SELECT user_id, User_name, Password FROM users ORDER BY user_id', (err, rows) => {
+            if (err) {
+                console.error('❌ Error fetching users:', err.message);
+                reject(err);
+                return;
+            }
+            
+            if (rows.length === 0) {
+                console.log('No users found.');
+            } else {
+                console.log(`ID | Username                | Password`);
+                console.log('-'.repeat(50));
+                rows.forEach(row => {
+                    const username = row.User_name.padEnd(20);
+                    const password = row.Password.length > 3 ? '***' + row.Password.substring(3) : '***';
+                    console.log(`${row.user_id.toString().padStart(2)} | ${username} | ${password}`);
+                });
+                console.log(`\nTotal users: ${rows.length}`);
+            }
+            console.log('');
+            resolve();
+        });
+    });
+}
+
 // Function to display orders
 function showOrders() {
     return new Promise((resolve, reject) => {
@@ -145,6 +176,7 @@ function showSummary() {
 async function main() {
     try {
         await showClients();
+        await showUsers();
         await showOrders();
         await showSummary();
         

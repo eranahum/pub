@@ -143,7 +143,7 @@ tail -f logs/err.log
 ## 🔒 Security Notes
 
 - The application runs on port 2000
-- No authentication required (except payout password: "tuvalu")
+- No authentication required
 - Database file is local: `pub_database.db`
 - Consider using a reverse proxy (nginx) for production
 

@@ -35,8 +35,64 @@ function openSelectDropdown(selectEl) {
     selectEl.addEventListener('keydown', onKeyDown);
 }
 
+// Logout function
+async function logout() {
+    try {
+        const response = await fetch('/api/logout', {
+            method: 'POST',
+            credentials: 'include'
+        });
+        
+        if (response.ok) {
+            console.log('✅ Logged out successfully');
+            window.location.href = '/login.html';
+        } else {
+            console.error('Logout failed');
+            // Force redirect anyway
+            window.location.href = '/login.html';
+        }
+    } catch (error) {
+        console.error('Logout error:', error);
+        window.location.href = '/login.html';
+    }
+}
+
+// Check authentication on page load
+async function checkAuthentication() {
+    try {
+        const response = await fetch('/api/check-session', {
+            credentials: 'include'
+        });
+        
+        if (!response.ok) {
+            // Not authenticated, redirect to login
+            window.location.href = '/login.html';
+            return false;
+        }
+        
+        const data = await response.json();
+        if (data.authenticated) {
+            console.log(`✅ Authenticated as: ${data.user.username}`);
+            return true;
+        } else {
+            window.location.href = '/login.html';
+            return false;
+        }
+    } catch (error) {
+        console.error('Authentication check failed:', error);
+        window.location.href = '/login.html';
+        return false;
+    }
+}
+
 // Initialize the application
 document.addEventListener('DOMContentLoaded', async function() {
+    // Check authentication first
+    const isAuthenticated = await checkAuthentication();
+    if (!isAuthenticated) {
+        return; // Stop initialization if not authenticated
+    }
+    
     await loadData();
     await addNewClients(); // Add the new client list
     setupNavigation();
@@ -51,8 +107,16 @@ async function apiRequest(url, options = {}) {
                 'Content-Type': 'application/json',
                 ...options.headers
             },
+            credentials: 'include', // Include cookies in requests
             ...options
         });
+        
+        // Check for authentication error
+        if (response.status === 401) {
+            console.log('❌ Session expired or unauthorized. Redirecting to login...');
+            window.location.href = '/login.html';
+            throw new Error('Unauthorized');
+        }
         
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
@@ -175,7 +239,7 @@ function loadPage(page = '') {
     
     switch (page) {
         case 'payout':
-            checkPayoutPassword();
+            loadPayoutPage();
             break;
         case 'register':
             loadRegisterPage();
@@ -358,39 +422,14 @@ async function sendOrder() {
     }
 }
 
-// Password protection for payout page
-function checkPayoutPassword() {
-    const mainContent = document.getElementById('main-content');
-    mainContent.innerHTML = `
-        <div class="payout-section">
-            <h2>דוח תשלום</h2>
-            <div class="password-form">
-                <label for="payout-password">הכנס סיסמה:</label>
-                <input type="password" id="payout-password" placeholder="סיסמה" required>
-                <button class="generate-report-btn" onclick="verifyPayoutPassword()">התחבר</button>
-            </div>
-            <div class="report-display" id="report-display"></div>
-        </div>
-    `;
-}
-
-function verifyPayoutPassword() {
-    const password = document.getElementById('payout-password').value;
-    if (password === 'tuvalu') {
-        loadPayoutPage();
-    } else {
-        showMessage('סיסמה שגויה. אנא נסה שוב.', 'error');
-    }
-}
-
 // Payout page functionality
 async function loadPayoutPage() {
     const mainContent = document.getElementById('main-content');
     mainContent.innerHTML = `
         <div class="payout-section">
-            <h2>דוח תשלום</h2>
+            <h2>דוחות</h2>
             <div class="payout-buttons">
-                <button class="generate-report-btn" onclick="generatePayoutReport()">צור דוח תשלום</button>
+                <button class="generate-report-btn" onclick="generatePayoutReport()">דוח תשלום</button>
                 <button class="delete-order-btn" onclick="showDeleteOrderForm()">מחק הזמנה</button>
                 <button class="client-report-btn" onclick="showClientReportForm()">דוח לקוח</button>
             </div>
@@ -444,12 +483,12 @@ async function loadUnpaidOrders() {
         
         if (orders.length === 0) {
             console.log('No unpaid orders, showing empty message');
-            unpaidOrdersDisplay.innerHTML = '<p style="text-align: center; color: #666; margin: 20px 0;">אין הזמנות לא משולמות</p>';
+            unpaidOrdersDisplay.innerHTML = '<p style="text-align: center; color: #666; margin: 20px 0;">אין הזמנות שלא דווחו</p>';
             return;
         }
         
         let ordersHtml = `
-            <h3>הזמנות לא משולמות (${orders.length})</h3>
+            <h3>הזמנות שלא דווחו (${orders.length})</h3>
             <div class="orders-table-container">
                 <table class="orders-table">
                     <thead>
@@ -562,7 +601,7 @@ async function generatePayoutReport() {
         const orders = await apiRequest('/api/orders?paid=false');
         
         if (orders.length === 0) {
-            showMessage('לא נמצאו הזמנות לא משולמות.', 'success');
+            showMessage('לא נמצאו הזמנות שלא דווחו.', 'success');
             return;
         }
         
@@ -576,7 +615,7 @@ async function generatePayoutReport() {
         });
         
         let csvContent = 'שם,טלפון,סכום,תאריך הזמנה,תאריך תשלום\n';
-        let reportHtml = '<h3>דוח תשלום</h3><table class="drinks-table"><tr><th>שם</th><th>טלפון</th><th>סכום</th><th>תאריך הזמנה</th><th>תאריך תשלום</th></tr>';
+        let reportHtml = '<h3>דוחות - תשלום</h3><table class="drinks-table"><tr><th>שם</th><th>טלפון</th><th>סכום</th><th>תאריך הזמנה</th><th>תאריך תשלום</th></tr>';
         
         // Get current date for paid date
         const currentDate = new Date().toLocaleDateString('he-IL');
@@ -614,10 +653,10 @@ async function generatePayoutReport() {
             await loadUnpaidOrders();
         }, 500);
         
-        showMessage('דוח תשלום נוצר וההזמנות סומנו כמשולמות.', 'success');
+        showMessage('הדוח נוצר וההזמנות סומנו כמשולמות.', 'success');
     } catch (error) {
         console.error('Error generating payout report:', error);
-        showMessage('שגיאה ביצירת דוח התשלום. אנא נסה שוב.', 'error');
+        showMessage('שגיאה ביצירת הדוח. אנא נסה שוב.', 'error');
     }
 }
 

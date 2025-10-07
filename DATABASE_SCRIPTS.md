@@ -1,5 +1,13 @@
 # 🍺 Database Management Scripts
 
+## 🌐 Local Application
+**Access the pub management app:** [http://localhost:3005](http://localhost:3005)
+
+To start the server:
+```bash
+npm start
+```
+
 ## 📋 Available Scripts
 
 ### 1. `view_database.js` - Full Database Viewer
