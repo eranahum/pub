@@ -119,7 +119,7 @@ function showOrders() {
         
         db.all(`
             SELECT id, name, drink, quantity, price_sum, paid, 
-                   order_date, paid_date 
+                   order_date, paid_date, event 
             FROM orders 
             ORDER BY id DESC 
             LIMIT 20
@@ -133,16 +133,17 @@ function showOrders() {
             if (rows.length === 0) {
                 console.log('No orders found.');
             } else {
-                console.log('ID | Name           | Drink        | Qty | Price | Paid | Order Date | Paid Date');
-                console.log('-'.repeat(80));
+                console.log('ID | Name           | Drink        | Qty | Price | Paid | Order Date | Paid Date | Event');
+                console.log('-'.repeat(90));
                 rows.forEach(row => {
                     const name = row.name.substring(0, 12).padEnd(12);
                     const drink = row.drink.substring(0, 12).padEnd(12);
                     const paid = row.paid ? 'Yes' : 'No';
                     const orderDate = row.order_date || 'N/A';
                     const paidDate = row.paid_date || 'N/A';
+                    const event = row.event || 'N/A';
                     
-                    console.log(`${row.id.toString().padStart(2)} | ${name} | ${drink} | ${row.quantity.toString().padStart(3)} | ${row.price_sum.toString().padStart(5)} | ${paid.padStart(4)} | ${orderDate} | ${paidDate}`);
+                    console.log(`${row.id.toString().padStart(2)} | ${name} | ${drink} | ${row.quantity.toString().padStart(3)} | ${row.price_sum.toString().padStart(5)} | ${paid.padStart(4)} | ${orderDate} | ${paidDate} | ${event}`);
                 });
                 console.log(`\nShowing last ${rows.length} orders`);
             }

@@ -502,6 +502,7 @@ async function loadUnpaidOrders() {
                             <th>כמות</th>
                             <th>מחיר</th>
                             <th>תאריך הזמנה</th>
+                            <th>אירוע</th>
                             <th>סטטוס</th>
                         </tr>
                     </thead>
@@ -510,6 +511,7 @@ async function loadUnpaidOrders() {
         
         orders.forEach(order => {
             const orderDate = order.order_date ? new Date(order.order_date).toLocaleDateString('he-IL') : 'לא זמין';
+            const eventName = order.event || '-';
             ordersHtml += `
                 <tr>
                     <td>${order.id}</td>
@@ -518,6 +520,7 @@ async function loadUnpaidOrders() {
                     <td>${order.quantity}</td>
                     <td>₪${order.price_sum}</td>
                     <td>${orderDate}</td>
+                    <td>${eventName}</td>
                     <td><span class="status-unpaid">לא שולם</span></td>
                 </tr>
             `;
@@ -617,8 +620,8 @@ async function generatePayoutReport() {
             groupedOrders[order.name] += order.price_sum;
         });
         
-        let csvContent = 'שם,טלפון,סכום,תאריך הזמנה,תאריך תשלום\n';
-        let reportHtml = '<h3>דוחות - תשלום</h3><table class="drinks-table"><tr><th>שם</th><th>טלפון</th><th>סכום</th><th>תאריך הזמנה</th><th>תאריך תשלום</th></tr>';
+        let csvContent = 'שם,טלפון,סכום,תאריך הזמנה,אירוע,תאריך תשלום\n';
+        let reportHtml = '<h3>דוחות - תשלום</h3><table class="drinks-table"><tr><th>שם</th><th>טלפון</th><th>סכום</th><th>תאריך הזמנה</th><th>אירוע</th><th>תאריך תשלום</th></tr>';
         
         // Get current date for paid date
         const currentDate = new Date().toLocaleDateString('he-IL');
@@ -628,12 +631,13 @@ async function generatePayoutReport() {
             const client = clients.find(c => c.name === name);
             const phone = client ? client.phone : '';
             
-            // Find the most recent order date for this client
+            // Find the most recent order date and event for this client
             const clientOrders = orders.filter(o => o.name === name);
             const orderDate = clientOrders.length > 0 ? clientOrders[0].order_date : '';
+            const eventName = clientOrders.length > 0 && clientOrders[0].event ? clientOrders[0].event : '-';
             
-            csvContent += `${name},${phone},${total},${orderDate},${currentDate}\n`;
-            reportHtml += `<tr><td>${name}</td><td>${phone}</td><td>₪${total}</td><td>${orderDate}</td><td>${currentDate}</td></tr>`;
+            csvContent += `${name},${phone},${total},${orderDate},${eventName},${currentDate}\n`;
+            reportHtml += `<tr><td>${name}</td><td>${phone}</td><td>₪${total}</td><td>${orderDate}</td><td>${eventName}</td><td>${currentDate}</td></tr>`;
         });
         
         reportHtml += '</table>';
@@ -1215,6 +1219,7 @@ async function generateClientReport() {
                             <th>מחיר</th>
                             <th>סטטוס</th>
                             <th>תאריך הזמנה</th>
+                            <th>אירוע</th>
                             <th>תאריך תשלום</th>
                         </tr>
                     </thead>
@@ -1228,6 +1233,7 @@ async function generateClientReport() {
             const paidStatus = order.paid ? 'שולם' : 'לא שולם';
             const paidDate = order.paid_date || '-';
             const orderDate = order.order_date || '-';
+            const eventName = order.event || '-';
             
             totalAmount += order.price_sum;
             if (order.paid) {
@@ -1243,6 +1249,7 @@ async function generateClientReport() {
                     <td>₪${order.price_sum}</td>
                     <td>${paidStatus}</td>
                     <td>${orderDate}</td>
+                    <td>${eventName}</td>
                     <td>${paidDate}</td>
                 </tr>
             `;

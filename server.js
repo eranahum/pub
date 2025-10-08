@@ -81,6 +81,12 @@ function initializeDatabase() {
                         }
                     });
                     
+                    db.run(`ALTER TABLE orders ADD COLUMN event TEXT`, (err) => {
+                        if (err && !err.message.includes('duplicate column name')) {
+                            console.error('Error adding event column:', err);
+                        }
+                    });
+                    
                     // Update existing orders with current date
                     const currentDate = new Date().toISOString().split('T')[0];
                     db.run(`UPDATE orders SET order_date = ? WHERE order_date IS NULL`, [currentDate], (err) => {
@@ -264,14 +270,28 @@ app.get('/api/orders', requireAuth, (req, res) => {
 app.post('/api/orders', requireAuth, (req, res) => {
     const { name, drink, quantity, price_sum } = req.body;
     const orderDate = new Date().toISOString().split('T')[0]; // Current date in YYYY-MM-DD format
-    db.run('INSERT INTO orders (name, drink, quantity, price_sum, paid, order_date) VALUES (?, ?, ?, ?, ?, ?)', 
-           [name, drink, quantity, price_sum, false, orderDate], function(err) {
+    
+    // Check if there's an event on the same date
+    db.get('SELECT event_name FROM events WHERE event_date = ?', [orderDate], (err, eventRow) => {
         if (err) {
-            console.error('Error adding order:', err);
-            res.status(500).json({ error: 'Failed to add order' });
-        } else {
-            res.json({ success: true, id: this.lastID });
+            console.error('Error checking for events:', err);
+            // Continue with order creation even if event check fails
         }
+        
+        const eventName = eventRow ? eventRow.event_name : null;
+        
+        db.run('INSERT INTO orders (name, drink, quantity, price_sum, paid, order_date, event) VALUES (?, ?, ?, ?, ?, ?, ?)', 
+               [name, drink, quantity, price_sum, false, orderDate, eventName], function(err) {
+            if (err) {
+                console.error('Error adding order:', err);
+                res.status(500).json({ error: 'Failed to add order' });
+            } else {
+                if (eventName) {
+                    console.log(`✅ Order added for event: ${eventName}`);
+                }
+                res.json({ success: true, id: this.lastID, event: eventName });
+            }
+        });
     });
 });
 
