@@ -7,6 +7,12 @@ yarn-error.log*
 # Database
 pub_database.db
 
+# SSL Certificates
+ssl/
+*.pem
+*.key
+*.crt
+
 # Environment variables
 .env
 .env.local

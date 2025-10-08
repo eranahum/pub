@@ -1,13 +1,18 @@
 const express = require('express');
 const fs = require('fs').promises;
+const fsSync = require('fs');
 const path = require('path');
+const https = require('https');
+const http = require('http');
 const cors = require('cors');
 const sqlite3 = require('sqlite3').verbose();
 const session = require('express-session');
 const cookieParser = require('cookie-parser');
 
 const app = express();
-const PORT = 3005;
+const PORT = process.env.PORT || 3005;
+const HTTPS_PORT = process.env.HTTPS_PORT || 3443;
+const USE_HTTPS = process.env.USE_HTTPS === 'true';
 
 // Database setup
 const dbPath = path.join(__dirname, 'pub_database.db');
@@ -92,13 +97,14 @@ app.use(cors({
 app.use(express.json());
 app.use(cookieParser());
 app.use(session({
-    secret: 'pub-tuvalu-secret-key-2025',
+    secret: process.env.SESSION_SECRET || 'pub-tuvalu-secret-key-2025',
     resave: false,
     saveUninitialized: false,
     cookie: {
         maxAge: 5 * 60 * 60 * 1000, // 5 hours in milliseconds
         httpOnly: true,
-        secure: false // Set to true if using HTTPS
+        secure: USE_HTTPS, // Enable secure cookies when using HTTPS
+        sameSite: USE_HTTPS ? 'strict' : 'lax'
     }
 }));
 
@@ -315,17 +321,53 @@ app.put('/drinks.json', requireAuth, async (req, res) => {
 
 // Initialize database and start server
 initializeDatabase().then(() => {
-    const server = app.listen(PORT, '0.0.0.0', () => {
-        console.log(`🍺 שרת פאב תובל פועל על פורט ${PORT}`);
-        console.log(`🌐 נגיש בכתובת: http://0.0.0.0:${PORT}`);
-        console.log(`📊 מסד נתונים SQLite: ${dbPath}`);
-        console.log('✅ השרת מוכן לקבלת בקשות');
-    });
+    let server;
+    
+    if (USE_HTTPS) {
+        // HTTPS server
+        const sslPath = path.join(__dirname, 'ssl');
+        const keyPath = path.join(sslPath, 'key.pem');
+        const certPath = path.join(sslPath, 'cert.pem');
+        
+        // Check if SSL certificates exist
+        if (!fsSync.existsSync(keyPath) || !fsSync.existsSync(certPath)) {
+            console.error('❌ SSL certificates not found!');
+            console.error('📁 Expected location: ./ssl/');
+            console.error('🔑 Required files: key.pem, cert.pem');
+            console.error('💡 Run: npm run generate-cert (for development)');
+            console.error('💡 Or use Let\'s Encrypt for production');
+            process.exit(1);
+        }
+        
+        const httpsOptions = {
+            key: fsSync.readFileSync(keyPath),
+            cert: fsSync.readFileSync(certPath)
+        };
+        
+        server = https.createServer(httpsOptions, app);
+        server.listen(HTTPS_PORT, '0.0.0.0', () => {
+            console.log(`🍺 שרת פאב תובל פועל על פורט ${HTTPS_PORT} (HTTPS)`);
+            console.log(`🔒 נגיש בכתובת: https://0.0.0.0:${HTTPS_PORT}`);
+            console.log(`📊 מסד נתונים SQLite: ${dbPath}`);
+            console.log('✅ השרת מוכן לקבלת בקשות (מאובטח)');
+        });
+    } else {
+        // HTTP server (development)
+        server = http.createServer(app);
+        server.listen(PORT, '0.0.0.0', () => {
+            console.log(`🍺 שרת פאב תובל פועל על פורט ${PORT} (HTTP)`);
+            console.log(`🌐 נגיש בכתובת: http://0.0.0.0:${PORT}`);
+            console.log(`📊 מסד נתונים SQLite: ${dbPath}`);
+            console.log('⚠️  מצב פיתוח - לא מאובטח');
+            console.log('✅ השרת מוכן לקבלת בקשות');
+        });
+    }
     
     // Handle server errors
     server.on('error', (err) => {
         if (err.code === 'EADDRINUSE') {
-            console.error(`❌ שגיאה: פורט ${PORT} כבר בשימוש`);
+            const port = USE_HTTPS ? HTTPS_PORT : PORT;
+            console.error(`❌ שגיאה: פורט ${port} כבר בשימוש`);
             console.error('💡 נסה לעצור תהליכים אחרים או שנה את הפורט');
         } else {
             console.error('❌ שגיאת שרת:', err);
