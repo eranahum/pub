@@ -59,6 +59,15 @@ function initializeDatabase() {
                         )
                     `);
                     
+                    db.run(`
+                        CREATE TABLE IF NOT EXISTS events (
+                            id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            event_name TEXT NOT NULL,
+                            event_date TEXT NOT NULL,
+                            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                        )
+                    `);
+                    
                     // Add new columns to existing orders table if they don't exist
                     db.run(`ALTER TABLE orders ADD COLUMN order_date TEXT`, (err) => {
                         if (err && !err.message.includes('duplicate column name')) {
@@ -317,6 +326,36 @@ app.put('/drinks.json', requireAuth, async (req, res) => {
         console.error('Error updating drinks.json:', error);
         res.status(500).json({ error: 'Failed to update drinks.json' });
     }
+});
+
+// API Routes for events
+app.get('/api/events', requireAuth, (req, res) => {
+    db.all('SELECT * FROM events ORDER BY event_date DESC', (err, rows) => {
+        if (err) {
+            console.error('Error fetching events:', err);
+            res.status(500).json({ error: 'Failed to fetch events' });
+        } else {
+            res.json(rows);
+        }
+    });
+});
+
+app.post('/api/events', requireAuth, (req, res) => {
+    const { event_name, event_date } = req.body;
+    
+    if (!event_name || !event_date) {
+        return res.status(400).json({ error: 'Event name and date are required' });
+    }
+    
+    db.run('INSERT INTO events (event_name, event_date) VALUES (?, ?)', [event_name, event_date], function(err) {
+        if (err) {
+            console.error('Error adding event:', err);
+            res.status(500).json({ error: 'Failed to add event' });
+        } else {
+            console.log(`✅ Event added: ${event_name} on ${event_date}`);
+            res.json({ success: true, id: this.lastID });
+        }
+    });
 });
 
 // Initialize database and start server

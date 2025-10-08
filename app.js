@@ -247,6 +247,9 @@ function loadPage(page = '') {
         case 'drinks':
             loadDrinksPage();
             break;
+        case 'events':
+            loadEventsPage();
+            break;
         default:
             loadHomePage();
     }
@@ -909,6 +912,131 @@ async function saveDrink(index) {
 
 function cancelEditDrink(index) {
     displayDrinks();
+}
+
+// Events page functionality
+function loadEventsPage() {
+    const mainContent = document.getElementById('main-content');
+    mainContent.innerHTML = `
+        <div class="events-section">
+            <h2>ניהול אירועים</h2>
+            
+            <div class="event-form">
+                <h3>הוסף אירוע חדש</h3>
+                <form id="event-form">
+                    <div class="form-group">
+                        <label for="event-name">שם האירוע:</label>
+                        <input type="text" id="event-name" placeholder="הכנס שם האירוע" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="event-date">תאריך האירוע:</label>
+                        <input type="date" id="event-date" required>
+                    </div>
+                    
+                    <button type="submit" class="submit-event-btn">הוסף אירוע</button>
+                </form>
+            </div>
+            
+            <div class="events-list" id="events-list">
+                <h3>רשימת אירועים</h3>
+                <div id="events-container"></div>
+            </div>
+        </div>
+    `;
+    
+    // Set today's date as default
+    document.getElementById('event-date').value = new Date().toISOString().split('T')[0];
+    
+    // Load existing events
+    loadEvents();
+    
+    // Handle form submission
+    document.getElementById('event-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        await submitEvent();
+    });
+}
+
+async function submitEvent() {
+    const eventName = document.getElementById('event-name').value.trim();
+    const eventDate = document.getElementById('event-date').value;
+    
+    if (!eventName || !eventDate) {
+        showMessage('אנא מלא את כל השדות.', 'error');
+        return;
+    }
+    
+    try {
+        const response = await apiRequest('/api/events', {
+            method: 'POST',
+            body: JSON.stringify({
+                event_name: eventName,
+                event_date: eventDate
+            })
+        });
+        
+        if (response.success) {
+            showMessage(`אירוע "${eventName}" נוסף בהצלחה!`, 'success');
+            document.getElementById('event-form').reset();
+            document.getElementById('event-date').value = new Date().toISOString().split('T')[0];
+            loadEvents(); // Refresh the events list
+        }
+    } catch (error) {
+        console.error('Error adding event:', error);
+        showMessage('שגיאה בהוספת האירוע. אנא נסה שוב.', 'error');
+    }
+}
+
+async function loadEvents() {
+    try {
+        const events = await apiRequest('/api/events');
+        displayEvents(events);
+    } catch (error) {
+        console.error('Error loading events:', error);
+        showMessage('שגיאה בטעינת רשימת האירועים.', 'error');
+    }
+}
+
+function displayEvents(events) {
+    const container = document.getElementById('events-container');
+    
+    if (events.length === 0) {
+        container.innerHTML = '<p>אין אירועים זמינים. הוסף אירוע ראשון!</p>';
+        return;
+    }
+    
+    let html = `
+        <table class="events-table">
+            <thead>
+                <tr>
+                    <th>שם האירוע</th>
+                    <th>תאריך</th>
+                    <th>נוצר ב</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
+    
+    events.forEach(event => {
+        const eventDate = new Date(event.event_date).toLocaleDateString('he-IL');
+        const createdDate = new Date(event.created_at).toLocaleDateString('he-IL');
+        
+        html += `
+            <tr>
+                <td>${event.event_name}</td>
+                <td>${eventDate}</td>
+                <td>${createdDate}</td>
+            </tr>
+        `;
+    });
+    
+    html += `
+            </tbody>
+        </table>
+    `;
+    
+    container.innerHTML = html;
 }
 
 // Reset order form for next order

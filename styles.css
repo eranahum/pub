@@ -922,3 +922,113 @@ input, textarea, select {
     background-color: #f5c6cb !important;
     opacity: 0.9;
 }
+
+/* Events page styles */
+.events-section {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.event-form {
+    background: white;
+    padding: 25px;
+    border-radius: 15px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    margin-bottom: 30px;
+}
+
+.event-form h3 {
+    color: #8B4513;
+    margin-bottom: 20px;
+    text-align: center;
+    font-size: 1.5rem;
+}
+
+.event-form .form-group {
+    margin-bottom: 20px;
+}
+
+.event-form label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: bold;
+    color: #8B4513;
+    font-size: 1.1rem;
+}
+
+.event-form input {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: border-color 0.3s;
+    box-sizing: border-box;
+}
+
+.event-form input:focus {
+    outline: none;
+    border-color: #8B4513;
+}
+
+.submit-event-btn {
+    background: linear-gradient(135deg, #8B4513 0%, #D2691E 100%);
+    color: white;
+    border: none;
+    padding: 15px 30px;
+    font-size: 1.2rem;
+    border-radius: 25px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    width: 100%;
+    font-weight: bold;
+}
+
+.submit-event-btn:hover {
+    background: linear-gradient(135deg, #D2691E 0%, #8B4513 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+
+.events-list {
+    background: white;
+    padding: 25px;
+    border-radius: 15px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.events-list h3 {
+    color: #8B4513;
+    margin-bottom: 20px;
+    text-align: center;
+    font-size: 1.5rem;
+}
+
+.events-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+}
+
+.events-table th,
+.events-table td {
+    padding: 12px;
+    text-align: right;
+    border-bottom: 1px solid #ddd;
+}
+
+.events-table th {
+    background: #f8f9fa;
+    font-weight: bold;
+    color: #8B4513;
+    border-bottom: 2px solid #8B4513;
+}
+
+.events-table tr:hover {
+    background: #f8f9fa;
+}
+
+.events-table tr:last-child td {
+    border-bottom: none;
+}

@@ -79,6 +79,38 @@ function showUsers() {
     });
 }
 
+// Function to display events
+function showEvents() {
+    return new Promise((resolve, reject) => {
+        console.log('🎉 EVENTS:');
+        console.log('='.repeat(70));
+        
+        db.all('SELECT id, event_name, event_date, created_at FROM events ORDER BY event_date DESC', (err, rows) => {
+            if (err) {
+                console.error('❌ Error fetching events:', err.message);
+                reject(err);
+                return;
+            }
+            
+            if (rows.length === 0) {
+                console.log('No events found.');
+            } else {
+                console.log(`ID | Event Name                    | Event Date | Created At`);
+                console.log('-'.repeat(70));
+                rows.forEach(row => {
+                    const eventName = row.event_name.padEnd(25);
+                    const eventDate = row.event_date;
+                    const createdDate = row.created_at ? row.created_at.split('T')[0] : 'N/A';
+                    console.log(`${row.id.toString().padStart(2)} | ${eventName} | ${eventDate} | ${createdDate}`);
+                });
+                console.log(`\nTotal events: ${rows.length}`);
+            }
+            console.log('');
+            resolve();
+        });
+    });
+}
+
 // Function to display orders
 function showOrders() {
     return new Promise((resolve, reject) => {
@@ -177,6 +209,7 @@ async function main() {
     try {
         await showClients();
         await showUsers();
+        await showEvents();
         await showOrders();
         await showSummary();
         
