@@ -620,8 +620,8 @@ async function generatePayoutReport() {
             groupedOrders[order.name] += order.price_sum;
         });
         
-        let csvContent = 'שם,טלפון,סכום,תאריך הזמנה,אירוע,תאריך תשלום\n';
-        let reportHtml = '<h3>דוחות - תשלום</h3><table class="drinks-table"><tr><th>שם</th><th>טלפון</th><th>סכום</th><th>תאריך הזמנה</th><th>אירוע</th><th>תאריך תשלום</th></tr>';
+        let csvContent = 'שם,טלפון,סכום,תאריך הזמנה,תאריך תשלום\n';
+        let reportHtml = '<h3>דוחות - תשלום</h3><table class="drinks-table"><tr><th>שם</th><th>טלפון</th><th>סכום</th><th>תאריך הזמנה</th><th>תאריך תשלום</th></tr>';
         
         // Get current date for paid date
         const currentDate = new Date().toLocaleDateString('he-IL');
@@ -631,13 +631,12 @@ async function generatePayoutReport() {
             const client = clients.find(c => c.name === name);
             const phone = client ? client.phone : '';
             
-            // Find the most recent order date and event for this client
+            // Find the most recent order date for this client
             const clientOrders = orders.filter(o => o.name === name);
             const orderDate = clientOrders.length > 0 ? clientOrders[0].order_date : '';
-            const eventName = clientOrders.length > 0 && clientOrders[0].event ? clientOrders[0].event : '-';
             
-            csvContent += `${name},${phone},${total},${orderDate},${eventName},${currentDate}\n`;
-            reportHtml += `<tr><td>${name}</td><td>${phone}</td><td>₪${total}</td><td>${orderDate}</td><td>${eventName}</td><td>${currentDate}</td></tr>`;
+            csvContent += `${name},${phone},${total},${orderDate},${currentDate}\n`;
+            reportHtml += `<tr><td>${name}</td><td>${phone}</td><td>₪${total}</td><td>${orderDate}</td><td>${currentDate}</td></tr>`;
         });
         
         reportHtml += '</table>';
@@ -692,10 +691,6 @@ function loadRegisterPage() {
                     <label for="client-name">שם:</label>
                     <input type="text" id="client-name" required>
                 </div>
-                <div class="form-group">
-                    <label for="client-phone">מספר טלפון:</label>
-                    <input type="tel" id="client-phone" required>
-                </div>
                 <button type="submit" class="add-client-btn">הוסף לקוח</button>
             </form>
         </div>
@@ -706,10 +701,9 @@ async function addClient(event) {
     event.preventDefault();
     
     const name = document.getElementById('client-name').value.trim();
-    const phone = document.getElementById('client-phone').value.trim();
     
-    if (!name || !phone) {
-        showMessage('אנא מלא את כל השדות.', 'error');
+    if (!name) {
+        showMessage('אנא הזן שם לקוח.', 'error');
         return;
     }
     
@@ -724,10 +718,10 @@ async function addClient(event) {
     }
     
     try {
-        // Add to server database
+        // Add to server database (phone is empty string as it's not required)
         await apiRequest('/api/clients', {
             method: 'POST',
-            body: JSON.stringify({ name, phone })
+            body: JSON.stringify({ name, phone: '' })
         });
         
         // Reload clients from server
@@ -737,7 +731,6 @@ async function addClient(event) {
         
         // Reset form
         document.getElementById('client-name').value = '';
-        document.getElementById('client-phone').value = '';
     } catch (error) {
         console.error('Error adding client:', error);
         showMessage('שגיאה בהוספת הלקוח. אנא נסה שוב.', 'error');
@@ -1219,8 +1212,8 @@ async function generateClientReport() {
                             <th>מחיר</th>
                             <th>סטטוס</th>
                             <th>תאריך הזמנה</th>
-                            <th>אירוע</th>
                             <th>תאריך תשלום</th>
+                            <th>אירוע</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -1249,8 +1242,8 @@ async function generateClientReport() {
                     <td>₪${order.price_sum}</td>
                     <td>${paidStatus}</td>
                     <td>${orderDate}</td>
-                    <td>${eventName}</td>
                     <td>${paidDate}</td>
+                    <td>${eventName}</td>
                 </tr>
             `;
         });
