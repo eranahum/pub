@@ -15,7 +15,7 @@ const HTTPS_PORT = process.env.HTTPS_PORT || 3443;
 const USE_HTTPS = process.env.USE_HTTPS === 'true';
 
 // Database setup
-const dbPath = path.join(__dirname, 'pub_database.db');
+const dbPath = process.env.DB_PATH || path.join(__dirname, 'pub_database.db');
 let db = null;
 
 // Initialize database
