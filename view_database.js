@@ -36,7 +36,7 @@ function showClients() {
                 console.log(`ID | Name                    | Phone`);
                 console.log('-'.repeat(50));
                 rows.forEach(row => {
-                    const name = row.name.padEnd(20);
+                    const name = row.name.padEnd(100);
                     const phone = row.phone || 'N/A';
                     console.log(`${row.id.toString().padStart(2)} | ${name} | ${phone}`);
                 });
@@ -67,7 +67,7 @@ function showUsers() {
                 console.log(`ID | Username                | Password`);
                 console.log('-'.repeat(50));
                 rows.forEach(row => {
-                    const username = row.User_name.padEnd(20);
+                    const username = row.User_name.padEnd(100);
                     const password = row.Password.length > 3 ? '***' + row.Password.substring(3) : '***';
                     console.log(`${row.user_id.toString().padStart(2)} | ${username} | ${password}`);
                 });
@@ -98,7 +98,7 @@ function showEvents() {
                 console.log(`ID | Event Name                    | Event Date | Created At`);
                 console.log('-'.repeat(70));
                 rows.forEach(row => {
-                    const eventName = row.event_name.padEnd(25);
+                    const eventName = row.event_name.padEnd(100);
                     const eventDate = row.event_date;
                     const createdDate = row.created_at ? row.created_at.split('T')[0] : 'N/A';
                     console.log(`${row.id.toString().padStart(2)} | ${eventName} | ${eventDate} | ${createdDate}`);
@@ -122,7 +122,7 @@ function showOrders() {
                    order_date, paid_date, event 
             FROM orders 
             ORDER BY id DESC 
-            LIMIT 20
+            LIMIT 100
         `, (err, rows) => {
             if (err) {
                 console.error('❌ Error fetching orders:', err.message);
